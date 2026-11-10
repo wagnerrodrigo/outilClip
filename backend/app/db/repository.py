@@ -1,3 +1,5 @@
+from pathlib import Path
+
 from app.config import Settings
 from app.db.models import AppPreferences, Clip, ClipVariant, Job, Video
 from sqlmodel import Session, SQLModel, create_engine, select
@@ -183,7 +185,10 @@ def _migrate_sqlite(engine) -> None:
 def create_db_engine(settings: Settings):
     db_path = settings.database_url.replace("sqlite:///", "")
     if db_path.startswith("./"):
-        db_path = settings.output_dir / db_path[2:]
+        relative = Path(db_path[2:])
+        if relative.parts and relative.parts[0] == "outputs":
+            relative = Path(*relative.parts[1:])
+        db_path = settings.output_dir / relative
         url = f"sqlite:///{db_path}"
     else:
         url = settings.database_url

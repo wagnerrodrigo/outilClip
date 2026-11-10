@@ -1,12 +1,17 @@
 # -*- mode: python ; coding: utf-8 -*-
+from PyInstaller.utils.hooks import collect_data_files
 
 a = Analysis(
     ['app/main.py'],
     pathex=['.'],
     binaries=[],
-    datas=[('app/prompts', 'app/prompts')],
+    datas=[
+        ('app/prompts', 'app/prompts'),
+        ('app/services/face_tracking/models', 'app/services/face_tracking/models'),
+    ] + collect_data_files('mediapipe.tasks.c', includes=['*.dylib']),
     hiddenimports=[
         'app',
+        'mediapipe.tasks.c',
         'uvicorn.logging',
         'uvicorn.loops',
         'uvicorn.loops.auto',

@@ -258,6 +258,7 @@ class ClipGenerationPipeline:
                         clip=candidate,
                         crop_path=clip_crop,
                         motion_plan=motion_plan,
+                        output_path=output_path,
                         aspect_ratio=ctx.aspect_ratio,
                     )
 
