@@ -10,6 +10,27 @@ from app.config import Settings
 
 logger = logging.getLogger(__name__)
 
+
+class _YtDlpLogger:
+    """Route yt-dlp output through logging instead of the process stderr.
+
+    A frozen sidecar's stderr pipe may not be drained, which turns yt-dlp's
+    error reporting into ``BrokenPipeError`` and hides the real failure.
+    """
+
+    def debug(self, msg: str) -> None:
+        pass
+
+    def info(self, msg: str) -> None:
+        pass
+
+    def warning(self, msg: str) -> None:
+        logger.warning("yt-dlp: %s", msg)
+
+    def error(self, msg: str) -> None:
+        logger.error("yt-dlp: %s", msg)
+
+
 ALLOWED_URL_PATTERNS = (
     r"youtube\.com/watch",
     r"youtu\.be/",
@@ -98,15 +119,29 @@ class UrlImportService:
             job.error_message = str(exc)
 
     def _download(self, url: str, output_template: str, progress_hook) -> str | None:
+        import time
+
         import yt_dlp
         from yt_dlp.utils import DownloadError
 
-        format_attempts = ("bv*+ba/b", "best")
+        # YouTube intermittently answers 403 depending on the player client it
+        # picks, so try a few client/format combinations before giving up.
+        attempts = (
+            ("default,-web_safari", "bv*+ba/b"),
+            ("tv", "bv*+ba/b"),
+            ("web_safari", "bv*+ba/b"),
+            ("default,-web_safari", "best"),
+        )
         last_error: Exception | None = None
         title: str | None = None
-        for fmt in format_attempts:
+        for index, (client, fmt) in enumerate(attempts):
             try:
-                ydl_opts = self._build_ydl_opts(output_template, progress_hook, format_selector=fmt)
+                ydl_opts = self._build_ydl_opts(
+                    output_template,
+                    progress_hook,
+                    format_selector=fmt,
+                    player_client=client,
+                )
                 with yt_dlp.YoutubeDL(ydl_opts) as ydl:
                     info = ydl.extract_info(url, download=True)
                     if info:
@@ -116,9 +151,12 @@ class UrlImportService:
                 return title
             except DownloadError as exc:
                 last_error = exc
-                if "403" not in str(exc) or fmt == format_attempts[-1]:
+                if "403" not in str(exc) or index == len(attempts) - 1:
                     raise
-                logger.warning("yt-dlp got 403 with format %r, retrying with fallback", fmt)
+                logger.warning(
+                    "yt-dlp got 403 with client %r / format %r, retrying", client, fmt
+                )
+                time.sleep(1.5 * (index + 1))
 
         if last_error:
             raise last_error
@@ -130,6 +168,7 @@ class UrlImportService:
         progress_hook,
         *,
         format_selector: str,
+        player_client: str,
     ) -> dict:
         import yt_dlp
 
@@ -139,10 +178,15 @@ class UrlImportService:
             "outtmpl": output_template,
             "quiet": True,
             "noprogress": True,
+            "logger": _YtDlpLogger(),
+            "retries": 3,
+            "fragment_retries": 3,
+            "extractor_retries": 2,
+            "socket_timeout": 30,
             "progress_hooks": [progress_hook],
             "extractor_args": {
                 "youtube": {
-                    "player_client": ["default", "-web_safari"],
+                    "player_client": player_client.split(","),
                 }
             },
         }
