@@ -1,9 +1,29 @@
+import os
+import sys
 from functools import lru_cache
 from pathlib import Path
 
+from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 from app.schemas.common import BundleProfile
+
+
+def _default_output_dir() -> Path:
+    """Pick a writable data directory when running as a bundled app.
+
+    Frozen Tauri apps inherit the launch cwd (usually "/" on macOS), so a
+    relative "./outputs" is not writable. Keep the relative default for dev.
+    """
+    if not getattr(sys, "frozen", False):
+        return Path("./outputs")
+    if sys.platform == "darwin":
+        return Path.home() / "Library" / "Application Support" / "PrimeClip" / "outputs"
+    if os.name == "nt":
+        base = os.environ.get("LOCALAPPDATA") or str(Path.home())
+        return Path(base) / "PrimeClip" / "outputs"
+    base = os.environ.get("XDG_DATA_HOME") or str(Path.home() / ".local" / "share")
+    return Path(base) / "primeclip" / "outputs"
 
 
 class Settings(BaseSettings):
@@ -15,7 +35,7 @@ class Settings(BaseSettings):
     ollama_url: str = "http://localhost:11434"
     whisper_model: str = "base"
     whisper_device: str = "auto"
-    output_dir: Path = Path("./outputs")
+    output_dir: Path = Field(default_factory=_default_output_dir)
     database_url: str = "sqlite:///./outputs/primeclip.db"
     sidecar_host: str = "127.0.0.1"
     sidecar_port: int = 8765
