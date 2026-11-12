@@ -13,6 +13,7 @@ const sampleState: PersistedUploadState = {
   importId: "import-1",
   readyVideo: { video_id: "vid-1", filename: "video.mp4", duration_sec: 120 },
   activeGeneration: { videoId: "vid-1", jobId: "job-1" },
+  clipDurationSec: 180,
 };
 
 describe("uploadSession", () => {
@@ -27,6 +28,7 @@ describe("uploadSession", () => {
       importId: null,
       readyVideo: null,
       activeGeneration: null,
+      clipDurationSec: 30,
     });
   });
 

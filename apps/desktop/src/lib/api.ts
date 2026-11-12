@@ -115,6 +115,7 @@ export async function generateClips(
   numClips: number,
   language?: string,
   aspectRatio?: "9:16" | "16:9",
+  clipDurationSec?: number,
 ): Promise<{ job_id: string }> {
   return request("/api/generate-clips", {
     method: "POST",
@@ -125,6 +126,9 @@ export async function generateClips(
       num_clips: numClips,
       language,
       aspect_ratio: aspectRatio ?? "9:16",
+      ...(clipDurationSec
+        ? { clip_min_sec: clipDurationSec, clip_max_sec: clipDurationSec }
+        : {}),
     }),
   });
 }

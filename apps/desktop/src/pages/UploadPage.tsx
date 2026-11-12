@@ -31,6 +31,13 @@ import type { ProviderDescriptor, ProviderKind, UploadResponse } from "../lib/ty
 
 const DEFAULT_OLLAMA_URL = "http://localhost:11434";
 
+const CLIP_DURATION_OPTIONS = [
+  { seconds: 30, label: "30 s" },
+  { seconds: 60, label: "1 min" },
+  { seconds: 180, label: "3 min" },
+  { seconds: 300, label: "5 min" },
+] as const;
+
 export function UploadPage() {
   const navigate = useNavigate();
   const { t, locale } = useLocale();
@@ -54,6 +61,7 @@ export function UploadPage() {
   const [kind, setKind] = useState<ProviderKind>("ollama");
   const [model, setModel] = useState("");
   const [numClips, setNumClips] = useState(5);
+  const [clipDuration, setClipDuration] = useState(session.clipDurationSec ?? 30);
   const [aspectRatio, setAspectRatio] = useState<"9:16" | "16:9">("9:16");
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -295,6 +303,7 @@ export function UploadPage() {
         numClips,
         whisperLang,
         aspectRatio,
+        clipDuration,
       );
       patchUploadSession({
         activeGeneration: { videoId: upload.video_id, jobId: job_id },
@@ -563,6 +572,36 @@ export function UploadPage() {
               </p>
             )}
           </label>
+
+          <div className="block">
+            <span className="label-muted">{t("upload.clipDuration")}</span>
+            <div className="mt-1 flex flex-wrap gap-2" role="group" aria-label={t("upload.clipDuration")}>
+              {CLIP_DURATION_OPTIONS.map((option) => {
+                const active = clipDuration === option.seconds;
+                return (
+                  <label
+                    key={option.seconds}
+                    className={`flex cursor-pointer items-center gap-2 rounded-lg border px-3 py-2 text-sm transition-colors ${
+                      active
+                        ? "border-brand-500 bg-brand-500/10 text-app-fg"
+                        : "border-app-border text-app-fg-muted hover:border-brand-500/60"
+                    }`}
+                  >
+                    <input
+                      type="checkbox"
+                      checked={active}
+                      onChange={() => {
+                        setClipDuration(option.seconds);
+                        patchUploadSession({ clipDurationSec: option.seconds });
+                      }}
+                      className="accent-brand-600"
+                    />
+                    {option.label}
+                  </label>
+                );
+              })}
+            </div>
+          </div>
 
           <label className="block">
             <span className="label-muted">

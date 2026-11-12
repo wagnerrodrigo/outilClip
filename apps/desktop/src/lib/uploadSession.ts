@@ -8,6 +8,7 @@ export interface PersistedUploadState {
   importId: string | null;
   readyVideo: UploadResponse | null;
   activeGeneration: { videoId: string; jobId: string } | null;
+  clipDurationSec: number;
 }
 
 const STORAGE_KEY = "primeclip-upload-session";
@@ -18,6 +19,7 @@ const DEFAULT: PersistedUploadState = {
   importId: null,
   readyVideo: null,
   activeGeneration: null,
+  clipDurationSec: 30,
 };
 
 export function loadUploadSession(): PersistedUploadState {
@@ -31,6 +33,7 @@ export function loadUploadSession(): PersistedUploadState {
       importId: parsed.importId ?? null,
       readyVideo: parsed.readyVideo ?? null,
       activeGeneration: parsed.activeGeneration ?? null,
+      clipDurationSec: parsed.clipDurationSec ?? DEFAULT.clipDurationSec,
     };
   } catch {
     return { ...DEFAULT };
