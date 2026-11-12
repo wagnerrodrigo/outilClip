@@ -5,7 +5,7 @@ from app.jobs.runner import JobRunner, get_job_runner
 from app.schemas.common import AspectRatio, CaptionStyleName, JobStatus
 from app.schemas.provider import ProviderConfig
 from fastapi import APIRouter, Depends, HTTPException
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, model_validator
 from sqlmodel import Session
 
 router = APIRouter(prefix="/generate-clips", tags=["jobs"])
@@ -19,6 +19,18 @@ class GenerateClipsRequest(BaseModel):
     caption_style: CaptionStyleName = CaptionStyleName.REELS
     words_per_screen: int | None = Field(default=None, ge=1, le=10)
     aspect_ratio: AspectRatio = AspectRatio.VERTICAL
+    clip_min_sec: float | None = Field(default=None, ge=1, le=1800)
+    clip_max_sec: float | None = Field(default=None, ge=1, le=1800)
+
+    @model_validator(mode="after")
+    def validate_clip_range(self) -> "GenerateClipsRequest":
+        if (
+            self.clip_min_sec is not None
+            and self.clip_max_sec is not None
+            and self.clip_max_sec < self.clip_min_sec
+        ):
+            raise ValueError("clip_max_sec must be greater than or equal to clip_min_sec")
+        return self
 
 
 class GenerateClipsResponse(BaseModel):
@@ -62,6 +74,8 @@ async def generate_clips(
         caption_style=body.caption_style,
         words_per_screen=body.words_per_screen,
         aspect_ratio=body.aspect_ratio,
+        min_clip_sec=body.clip_min_sec,
+        max_clip_sec=body.clip_max_sec,
     )
 
     return GenerateClipsResponse(job_id=job.id)

@@ -59,6 +59,8 @@ class JobRunner:
         caption_style: CaptionStyleName | None = None,
         words_per_screen: int | None = None,
         aspect_ratio: AspectRatio | None = None,
+        min_clip_sec: float | None = None,
+        max_clip_sec: float | None = None,
     ) -> None:
         task = asyncio.create_task(
             self._run_job(
@@ -70,6 +72,8 @@ class JobRunner:
                 caption_style or CaptionStyleName.REELS,
                 words_per_screen,
                 aspect_ratio or AspectRatio.VERTICAL,
+                min_clip_sec if min_clip_sec is not None else self.settings.clip_min_sec,
+                max_clip_sec if max_clip_sec is not None else self.settings.clip_max_sec,
             )
         )
         self._running[job_id] = task
@@ -103,6 +107,8 @@ class JobRunner:
         caption_style: CaptionStyleName,
         words_per_screen: int | None,
         aspect_ratio: AspectRatio,
+        min_clip_sec: float,
+        max_clip_sec: float,
     ) -> None:
 
         with Session(get_engine()) as session:
@@ -122,6 +128,8 @@ class JobRunner:
                 language=language or video.language,
                 provider_config=provider_config,
                 num_clips=num_clips,
+                min_clip_sec=min_clip_sec,
+                max_clip_sec=max_clip_sec,
                 caption_style=caption_style,
                 words_per_screen=words_per_screen,
                 aspect_ratio=aspect_ratio,

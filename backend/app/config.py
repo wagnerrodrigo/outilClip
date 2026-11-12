@@ -26,8 +26,25 @@ def _default_output_dir() -> Path:
     return Path(base) / "primeclip" / "outputs"
 
 
+def _app_config_dir() -> Path:
+    if sys.platform == "darwin":
+        return Path.home() / "Library" / "Application Support" / "PrimeClip"
+    if os.name == "nt":
+        return Path(os.environ.get("LOCALAPPDATA") or str(Path.home())) / "PrimeClip"
+    return Path(os.environ.get("XDG_CONFIG_HOME") or str(Path.home() / ".config")) / "primeclip"
+
+
+def _env_files() -> tuple[str, ...]:
+    """Frozen builds read config from the user's app data directory."""
+    if getattr(sys, "frozen", False):
+        return (str(_app_config_dir() / ".env"), ".env")
+    return (".env",)
+
+
 class Settings(BaseSettings):
-    model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8", extra="ignore")
+    model_config = SettingsConfigDict(
+        env_file=_env_files(), env_file_encoding="utf-8", extra="ignore"
+    )
 
     claude_api_key: str = ""
     openai_api_key: str = ""
@@ -46,6 +63,8 @@ class Settings(BaseSettings):
     log_to_file: bool = True
     scene_threshold: float = 0.3
     scene_min_len_sec: float = 2.0
+    clip_min_sec: float = 30
+    clip_max_sec: float = 90
     ytdlp_path: str = ""
     import_max_duration_sec: int = 7200
     ytdlp_cookies_file: str = ""

@@ -32,6 +32,12 @@ async def lifespan(app: FastAPI):
     if log_file:
         logger.info("Logging to %s", log_file)
     logger.info("PrimeClip API started (profile=%s)", settings.bundle_profile.value)
+    logger.info("Config env files: %s", settings.model_config.get("env_file"))
+    logger.info(
+        "Clip duration range: %.0f-%.0fs",
+        settings.clip_min_sec,
+        settings.clip_max_sec,
+    )
     yield
     from app.jobs.runner import get_job_runner
 

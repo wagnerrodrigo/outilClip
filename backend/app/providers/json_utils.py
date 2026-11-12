@@ -25,6 +25,8 @@ def parse_clip_candidates(
     *,
     duration_sec: float,
     num_clips: int,
+    min_clip_sec: float = 30,
+    max_clip_sec: float = 90,
 ) -> list[ClipCandidate]:
     cleaned = extract_json_array(raw)
     try:
@@ -46,6 +48,11 @@ def parse_clip_candidates(
             start = float(item.get("start", 0))
             end = float(item.get("end", 0))
             start = max(0.0, min(start, duration_sec))
+            end = max(0.0, min(end, duration_sec))
+            if end - start < min_clip_sec:
+                end = min(start + min_clip_sec, duration_sec)
+            if end - start > max_clip_sec:
+                end = start + max_clip_sec
             end = max(0.0, min(end, duration_sec))
             candidate = ClipCandidate(
                 title=str(item.get("title", "Untitled Clip")),
@@ -99,11 +106,11 @@ def fallback_heuristic_clips(
         return []
 
     windows: list[tuple[float, float, float]] = []
+    window = min(max_clip_sec, max(min_clip_sec, (min_clip_sec + max_clip_sec) / 2))
     for scene in scenes or [Scene(start=0, end=duration_sec)]:
         scene_segs = [s for s in transcript if s.end > scene.start and s.start < scene.end]
         if not scene_segs:
             continue
-        window = min_clip_sec
         step = 15.0
         t = scene.start
         while t + window <= scene.end:
@@ -115,9 +122,17 @@ def fallback_heuristic_clips(
             t += step
 
     if not windows:
-        start = transcript[0].start
-        end = min(start + 60, duration_sec)
-        windows = [(start, end, 1.0)]
+        # No scene is long enough for the target window: slide over the whole
+        # video instead of returning a single hardcoded-length clip.
+        t = 0.0
+        while t + window <= duration_sec:
+            segs = [s for s in transcript if s.end > t and s.start < t + window]
+            word_count = sum(len(s.text.split()) for s in segs)
+            windows.append((t, t + window, word_count / window))
+            t += 15.0
+
+    if not windows:
+        windows = [(0.0, min(window, duration_sec), 1.0)]
 
     windows.sort(key=lambda w: w[2], reverse=True)
     candidates: list[ClipCandidate] = []

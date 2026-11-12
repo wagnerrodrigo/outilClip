@@ -17,6 +17,8 @@ class PipelineContext:
     language: str | None = None
     provider_config: ProviderConfig | None = None
     num_clips: int = 10
+    min_clip_sec: float = 30
+    max_clip_sec: float = 90
     caption_style: CaptionStyleName = CaptionStyleName.REELS
     words_per_screen: int | None = None
     aspect_ratio: AspectRatio = AspectRatio.VERTICAL

@@ -149,6 +149,8 @@ class ClipGenerationPipeline:
                 duration_sec=ctx.duration_sec,
                 language=ctx.language or "en",
                 num_clips=ctx.num_clips,
+                min_clip_sec=ctx.min_clip_sec,
+                max_clip_sec=ctx.max_clip_sec,
             )
             ctx.clip_candidates = await provider.generate_clip_candidates(
                 request, ctx.provider_config
@@ -162,6 +164,8 @@ class ClipGenerationPipeline:
                     ctx.scenes,
                     duration_sec=ctx.duration_sec,
                     num_clips=ctx.num_clips,
+                    min_clip_sec=ctx.min_clip_sec,
+                    max_clip_sec=ctx.max_clip_sec,
                 )
             self.file_store.write_json_artifact(
                 ctx.video_id,

@@ -45,6 +45,8 @@ def build_clip_prompt(request: ClipSelectionRequest) -> tuple[str, str]:
         num_clips=request.num_clips,
         duration_sec=request.duration_sec,
         language=request.language,
+        min_clip_sec=int(request.min_clip_sec),
+        max_clip_sec=int(request.max_clip_sec),
         transcript=_format_transcript(request.transcript),
         scenes=_format_scenes(request.scenes),
     )
@@ -81,6 +83,8 @@ class OllamaProvider:
                     content,
                     duration_sec=request.duration_sec,
                     num_clips=request.num_clips,
+                    min_clip_sec=request.min_clip_sec,
+                    max_clip_sec=request.max_clip_sec,
                 )
                 return resolve_clip_candidates(
                     parsed,

@@ -44,6 +44,8 @@ class ClaudeProvider:
                     content,
                     duration_sec=request.duration_sec,
                     num_clips=request.num_clips,
+                    min_clip_sec=request.min_clip_sec,
+                    max_clip_sec=request.max_clip_sec,
                 )
                 return resolve_clip_candidates(
                     parsed,
